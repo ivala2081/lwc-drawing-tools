@@ -1,0 +1,27 @@
+name: Bug report
+description: A drawing renders, snaps or behaves wrongly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: lwc
+    attributes:
+      label: lightweight-charts version
+      placeholder: "4.2.3"
+    validations:
+      required: true
+  - type: dropdown
+    id: scale
+    attributes:
+      label: Price scale mode
+      options: [Normal, Logarithmic, Percentage, "Indexed to 100"]
+  - type: textarea
+    id: markup
+    attributes:
+      label: Markup object that reproduces it
+      render: json

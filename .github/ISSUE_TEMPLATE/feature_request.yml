@@ -1,0 +1,14 @@
+name: Feature request
+description: A new drawing tool or an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to draw or do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Where would you use it?

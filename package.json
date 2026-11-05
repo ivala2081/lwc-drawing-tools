@@ -5,8 +5,14 @@
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./react": "./src/react/index.js"
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./react": {
+      "types": "./src/react/index.d.ts",
+      "default": "./src/react/index.js"
+    }
   },
   "files": [
     "src"
@@ -32,7 +38,8 @@
     "candlestick",
     "trading",
     "charting",
-    "react"
+    "react",
+    "typescript"
   ],
   "author": "Hamed Alavi (https://github.com/ivala2081)",
   "license": "MIT",
@@ -42,5 +49,6 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "types": "./src/index.d.ts"
 }

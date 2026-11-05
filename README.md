@@ -22,7 +22,7 @@ Lightweight Charts ships without drawing tools. This is the layer I built for a 
 | `validation.js` | Candle hygiene: Hampel-filter spike clamping, outlier-tolerant price band, asset-class detection from the symbol |
 | `react/` | `useMarkupTools` (tool state machine), `useChartMarkupOverlay` (canvas, pointer and keyboard wiring), `useMarkupStore` (in-memory or localStorage) |
 
-The core is framework-free. The React hooks are optional.
+The core is framework-free. The React hooks are optional. TypeScript definitions are included.
 
 ## Why it exists
 
