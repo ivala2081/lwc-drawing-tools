@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lwc-drawing-tools demo</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0f141c; color: #cbd5e1; font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #1e293b; }
+  header h1 { font-size: 15px; margin: 0 12px 0 0; color: #f1f5f9; }
+  button { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; cursor: pointer; font: inherit; }
+  button[aria-pressed="true"] { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .hint { margin-left: auto; color: #64748b; font-size: 12px; }
+  #wrap { position: relative; height: calc(100vh - 58px); min-height: 360px; }
+  #chart, #overlay { position: absolute; inset: 0; }
+  #chart { z-index: 0; }  /* own stacking context, so the chart's z-indexed canvases stay below */
+  #overlay { z-index: 1; pointer-events: none; }
+  a { color: #60a5fa; }
+</style>
+</head>
+<body>
+<header>
+  <h1>lwc-drawing-tools</h1>
+  <button data-tool="trend">Trend</button>
+  <button data-tool="horizontal">Horizontal</button>
+  <button data-tool="vertical">Vertical</button>
+  <button data-tool="rect">Rectangle</button>
+  <button data-tool="fib">Fibonacci</button>
+  <button id="clear">Clear</button>
+  <span class="hint">Pick a tool, then click on the chart (two clicks for trend / rect / fib). Clicks snap to OHLC. · <a href="https://github.com/ivala2081/lwc-drawing-tools">GitHub</a></span>
+</header>
+<div id="wrap">
+  <div id="chart"></div>
+  <canvas id="overlay"></canvas>
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script type="module">
+import { makeAdapter, toLwcData } from '../src/lwcAdapters.js';
+import { drawMarkups, drawMarkup, DARK_THEME } from '../src/drawers.js';
+import { snapToOHLC, INTERVAL_MS } from '../src/chartMath.js';
+import { sanitizeCandles } from '../src/validation.js';
+
+// ── Synthetic 1h candles (random walk) ──────────────────────────────────────
+const step = INTERVAL_MS['1h'];
+const start = Date.UTC(2026, 0, 5);
+let price = 1.0850, seed = 7;
+const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const raw = Array.from({ length: 240 }, (_, i) => {
+  const open = price;
+  const close = open + (rand() - 0.49) * 0.0025;
+  const high = Math.max(open, close) + rand() * 0.0012;
+  const low = Math.min(open, close) - rand() * 0.0012;
+  price = close;
+  return { bucket: start + i * step, open, high, low, close };
+});
+const candles = sanitizeCandles(raw, 'EURUSD');
+const bars = candles.map(c => c.bucket);
+
+const wrap = document.getElementById('wrap');
+const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+  autoSize: true,
+  layout: { background: { color: DARK_THEME.bg }, textColor: '#94a3b8' },
+  grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+  timeScale: { timeVisible: true, rightOffset: 25 },
+});
+const series = chart.addCandlestickSeries({
+  upColor: DARK_THEME.bull, downColor: DARK_THEME.bear,
+  wickUpColor: DARK_THEME.bull, wickDownColor: DARK_THEME.bear, borderVisible: false,
+  priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
+});
+series.setData(toLwcData(candles));
+
+// Continuous adapter: drawings can sit between bars and in the future.
+const adapter = () => makeAdapter(chart, series, { bars, intervalMs: step });
+
+// ── A few starting drawings ─────────────────────────────────────────────────
+const at = (i, key) => ({ t: candles[i].bucket, price: candles[i][key] });
+let markups = [
+  { id: 'a', tool: 'trend', payload: { p1: at(60, 'low'), p2: at(150, 'low'), extendRight: true } },
+  { id: 'b', tool: 'fib', payload: { p1: at(170, 'high'), p2: at(215, 'low') } },
+  { id: 'c', tool: 'horizontal', payload: { p1: { t: bars.at(-1), price: candles.at(-1).close } } },
+];
+let tool = null, draft = null, nextId = 1;
+
+// ── Overlay canvas ──────────────────────────────────────────────────────────
+const canvas = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
+function plotRect() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  return { left: 0, top: 0, right: w - chart.priceScale('right').width(), bottom: h - chart.timeScale().height() };
+}
+function paint() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const a = adapter(), plot = plotRect();
+  drawMarkups(ctx, markups, a, plot, DARK_THEME, null, 5);
+  if (draft?.p2) drawMarkup(ctx, { id: 'draft', tool: draft.tool, payload: draft }, a, plot, DARK_THEME, true, 5);
+  requestAnimationFrame(paint);
+}
+requestAnimationFrame(paint);
+
+// ── Click-to-draw (a tiny vanilla version of useMarkupTools) ────────────────
+function pointAt(e) {
+  const r = wrap.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const a = adapter();
+  const snapped = e.ctrlKey || e.metaKey ? null : snapToOHLC(candles, px, py, a);
+  if (snapped) return snapped;
+  const t = a.xToTime(px), p = a.yToPrice(py);
+  return t == null || p == null ? null : { t, price: p };
+}
+chart.subscribeClick((param) => {
+  if (!tool || !param.point) return;
+  const e = { clientX: param.point.x + wrap.getBoundingClientRect().left, clientY: param.point.y + wrap.getBoundingClientRect().top, ctrlKey: param.sourceEvent?.ctrlKey, metaKey: param.sourceEvent?.metaKey };
+  const pt = pointAt(e);
+  if (!pt) return;
+  if (tool === 'horizontal' || tool === 'vertical') {
+    markups.push({ id: 'u' + nextId++, tool, payload: { p1: pt } });
+    setTool(null);
+  } else if (!draft) {
+    draft = { tool, p1: pt };
+  } else {
+    markups.push({ id: 'u' + nextId++, tool, payload: { p1: draft.p1, p2: pt } });
+    draft = null; setTool(null);
+  }
+});
+wrap.addEventListener('pointermove', (e) => {
+  if (!draft) return;
+  const pt = pointAt(e);
+  if (pt) draft.p2 = pt;
+});
+
+const buttons = [...document.querySelectorAll('button[data-tool]')];
+function setTool(t) {
+  tool = t; draft = null;
+  buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+}
+buttons.forEach(b => b.addEventListener('click', () => setTool(tool === b.dataset.tool ? null : b.dataset.tool)));
+document.getElementById('clear').addEventListener('click', () => { markups = []; setTool(null); });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setTool(null); });
+</script>
+</body>
+</html>

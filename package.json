@@ -1,0 +1,46 @@
+{
+  "name": "lwc-drawing-tools",
+  "version": "0.1.0",
+  "description": "Drawing tools for TradingView Lightweight Charts: trend lines with rays, Fibonacci retracements, rectangles, horizontal/vertical lines, OHLC snapping and resize handles.",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./react": "./src/react/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/chartMath.test.mjs test/validation.test.mjs"
+  },
+  "peerDependencies": {
+    "lightweight-charts": "^4.1.0",
+    "react": ">=17"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "lightweight-charts",
+    "tradingview",
+    "drawing-tools",
+    "trendline",
+    "fibonacci",
+    "candlestick",
+    "trading",
+    "charting",
+    "react"
+  ],
+  "author": "Hamed Alavi (https://github.com/ivala2081)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivala2081/lwc-drawing-tools.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
