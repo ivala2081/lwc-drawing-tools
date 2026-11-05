@@ -8,7 +8,9 @@ Lightweight Charts ships without drawing tools. This is the layer I built for a 
 
 [![Trend ray extended into the future, Fibonacci retracement and a horizontal level on a candlestick chart](docs/demo.png)](https://ivala2081.github.io/lwc-drawing-tools/example/)
 
+[![tests](https://github.com/ivala2081/lwc-drawing-tools/actions/workflows/test.yml/badge.svg)](https://github.com/ivala2081/lwc-drawing-tools/actions/workflows/test.yml)
 ![license](https://img.shields.io/badge/license-MIT-blue)
+![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 
 ## What's inside
 
